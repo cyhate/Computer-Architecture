@@ -1,0 +1,119 @@
+.data               # variable declaration section
+
+out_string: .asciiz "\nThe result is:\n"
+output_mess1: .asciiz "Please give me the lower bound\n"
+output_mess2: .asciiz "\nPlease give me the upper bound\n"
+given_mess1: .asciiz "The lower bound number given is:\n"
+given_mess2: .asciiz "\nThe upper bound number given is:\n"
+t0_reg_mess: .asciiz "\nThe original content of register $t0 is:\n"
+t2_reg_mess: .asciiz "\nThe original content of register $t2 is:\n"
+
+
+.text
+
+main: # indicates start of code
+
+# display message on the screen for the user to give the lower bound
+li $v0, 4
+la $a0, output_mess1
+syscall
+
+# read the lower bound
+li $v0, 5
+syscall
+move $t0, $v0
+
+#display a message showing the lower bound given
+li $v0, 4
+la $a0, given_mess1
+syscall
+li $v0, 1
+move $a0, $t0
+syscall
+
+# display message on the screen for the user to give the upper bound
+li $v0, 4
+la $a0, output_mess2
+syscall
+
+# read the upper bound
+li $v0, 5
+syscall
+move $t2, $v0
+
+#display a message showing the upper bound given
+li $v0, 4
+la $a0, given_mess1
+syscall
+li $v0, 1
+move $a0, $t2
+syscall
+
+#copy the two registers with the bounds to the $a0 and $a1 registers before calling procedure
+move $a0, $t0
+move $a1, $t2
+
+jal summation_function # call the summation_function procedure	
+# the result is in $v0, move it to $s7
+move $s7, $v0
+# skip the function this time
+j end
+
+summation_function:
+
+# store the two registers on the stack
+addi $sp, $sp, -8	  # save the two registers
+sw $t0, 4($sp)
+sw $t2, 0($sp)
+
+#initialize variable to hold final answer
+li $v0, 0 		  # $v0 will hold the sum, the result of the summation_function
+
+loop_top:
+bgt $a0, $a1, loop_end # exit loop if $t0 > $t2 upper bound given
+mul $t3, $a0, $a0 	  # special register Lo = $t0 * $t0
+add $v0, $v0, $t3 	  # $t1 = $t1 + $t3
+addi $a0, 1 		  # increment counter
+b loop_top 		  # branch to loop_top
+
+
+loop_end: 		  # print out the result string
+
+# recover the original registers
+lw $t0, 4($sp)
+lw $t2, 0($sp)
+addi $sp, $sp, 8
+
+# return to the caller
+jr $ra
+
+end: 
+# print the final result
+li $v0, 4 		  # system call code for printing string = 4
+la $a0, out_string 	  # load address of string to be printed into $a0
+syscall 			  # call operating system to perform print operation
+
+# print out integer value in $s7
+li $v0, 1 		  # system call code for printing integer = 1
+move $a0, $s7 	  # move integer to be printed into $a0: $a0 = $s7
+syscall 			  # call operating system to perform print
+
+#just to check print the original contents of register $t0
+li $v0, 4 		  # system call code for printing string = 4
+la $a0, t0_reg_mess 	  # load address of string to be printed into $a0
+syscall 			  # call operating system to perform print operation
+li $v0, 1 		  # system call code for printing integer = 1
+move $a0, $t0 	  # move integer to be printed into $a0: $a0 = $t0
+syscall 			  # call operating system to perform print
+
+#just to check print the original contents of register $t2
+li $v0, 4 		  # system call code for printing string = 4
+la $a0, t2_reg_mess 	  # load address of string to be printed into $a0
+syscall 			  # call operating system to perform print operation
+li $v0, 1 		  # system call code for printing integer = 1
+move $a0, $t2 	  # move integer to be printed into $a0: $a0 = $t2
+syscall 			  # call operating system to perform print
+
+# exit program
+li $v0, 10 		  # system call code for exit = 10
+syscall 			  # call operating system
